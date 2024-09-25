@@ -1,56 +1,29 @@
 <?php
 
+use App\Http\Controllers\JobController;
 use App\Models\Employer;
 use App\Models\Job;
 use App\Models\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::view('/', 'welcome');
 
-Route::get('/jobs', function () {
-    $jobs = Job::query()->with('employer')->orderBy('id', 'desc')->simplePaginate(3);
-    return view('jobs.index', [
-        'jobs' => $jobs
-    ]);
-});
+// Route::controller(JobController::class)->group(function () {
+//     Route::get('/jobs', 'index');
 
-Route::get('/jobs/create', function () {
-    $employers = Employer::all()->pluck(['id' => 'name']);
-    return view('jobs.create', [
-        'employers' => $employers
-    ]);
-});
+//     Route::get('/jobs/create', 'create');
 
+//     Route::post('/jobs/store', 'store');
 
-Route::post('/jobs/store', function () {
-    $validatedData = request()->validate([
-        'title' => 'required|string',
-        'salary' => 'required|string',
-        'employer_id' => 'required',
-    ]);
+//     Route::get('/jobs/{job}/edit', 'edit');
 
-    if (!isset($validatedData)) {
-        abort(421);
-        exit();
-    }
+//     Route::put('/jobs/update/{job}', 'update');
 
-    Job::insert($validatedData);
-    return redirect()->to('/')->with(['success' => 'Job created successfully']);
-    dd($validatedData);
-});
+//     Route::delete("/jobs/{job}", 'destroy');
 
-Route::get('/jobs/{id}', function ($id) {
+//     Route::get('/jobs/{job}', 'show');
 
-    $job = Job::find($id);
-
-    return view('jobs.show', [
-        'job' => $job
-    ]);
-});
-
-Route::get('/contact', function () {
-    return view('contact');
-});
+// });
+Route::resource('/jobs', JobController::class);
+Route::view('/contact', 'contact');
