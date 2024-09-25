@@ -2,9 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\JobPosted;
 use App\Models\Employer;
 use App\Models\Job;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Mail;
 
 class JobController extends Controller
 {
@@ -38,16 +42,23 @@ class JobController extends Controller
         $validatedData = $request->validate([
             'title' => 'required|string',
             'salary' => 'required|string',
-            'employer_id' => 'required',
+            'employer_id' => 'required'
         ]);
 
-        if (!isset($validatedData)) {
-            abort(421);
-            exit();
-        }
 
-        Job::insert($validatedData);
-        return redirect()->to('/')->with(['success' => 'Job created successfully']);
+
+        $job = Job::create([
+            'title' => $validatedData['title'],
+            'salary' => $validatedData['salary'],
+            'employer_id' => $validatedData['employer_id']
+        ]);
+
+        Mail::to(Auth::user())->send(
+            new JobPosted($job)
+        );
+
+
+        return redirect()->to('/jobs')->with(['success' => 'Job created successfully']);
     }
 
     /**
@@ -69,6 +80,10 @@ class JobController extends Controller
             abort(404);
         }
 
+        if (!Gate::allows('edit-job', $job)) {
+            abort(401);
+        };
+
         $employers = Employer::all()->pluck(['id' => 'name']);
 
         return view('jobs.edit', [
@@ -85,6 +100,10 @@ class JobController extends Controller
         if (!isset($job)) {
             abort(404);
         }
+
+        if (!Gate::allows('edit-job', $job)) {
+            abort(401);
+        };
 
         $validatedData = $request->validate([
             'title' => 'nullable',
@@ -110,6 +129,9 @@ class JobController extends Controller
      */
     public function destroy(Job $job)
     {
+        if (!Gate::allows('edit-job', $job)) {
+            abort(401);
+        };
         try {
             $job->delete();
             return redirect()->to('/jobs')->with('success', 'Job deleted successfully.');
